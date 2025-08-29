@@ -19,10 +19,20 @@ if [ "$(id -u)" -eq 0 ] && [ "{{ MODE }}" != "root" ] && [ "{{ MODE }}" != "auto
   prefix="runuser -u ${SUDO_USER:-user} --"
 fi
 
-$prefix {{ CMD }} --mode={{ MODE }} --variant=custom \
-  --skip=update,setup,cleanup,tar-in/mknod \
-  --setup-hook='tar-in ./cache/mmdebstrap-{{ DIST }}-apt.tar /' \
-  '' /tmp/debian-chroot.tar
+MMTARFILTER=
+[ -x /usr/bin/mmtarfilter ] && MMTARFILTER=/usr/bin/mmtarfilter
+[ -x ./tarfilter ] && MMTARFILTER=./tarfilter
 
-cmp ./cache/mmdebstrap-{{ DIST }}-apt.tar /tmp/debian-chroot.tar \
-  || diffoscope ./cache/mmdebstrap-{{ DIST }}-apt.tar /tmp/debian-chroot.tar
+$prefix {{ CMD }} --mode={{ MODE }} --variant=apt \
+  --skip=output/dev \
+  --customize-hook='chroot "$1" sh -c "sleep 1m > /dev/null" &' \
+  {{ DIST }} - {{ MIRROR }} \
+  | "$MMTARFILTER" --path-exclude="/dev" \
+    >/tmp/debian-chroot.tar
+
+origfilter() {
+  "$MMTARFILTER" <./cache/mmdebstrap-{{ DIST }}-apt.tar --path-exclude="/dev/*" --path-exclude="/dev"
+}
+
+origfilter | cmp - /tmp/debian-chroot.tar \
+  || origfilter | diffoscope - /tmp/debian-chroot.tar
