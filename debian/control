@@ -25,10 +25,6 @@ Recommends:
 # figure out the right signed-by value for distributions that apt doesn't know
 # the right keyring for
  gpg (>= 2.2.8),
-# To figure out whether a distro is EOL or not and to figure out which security
-# mirror to use because Debian bullseye and later use suite-security instead of
-# suite/updates.
- libdistro-info-perl,
 # to find out keyring paths
  libdpkg-perl,
 # needed in cases mknod is not permitted and device nodes have to be
